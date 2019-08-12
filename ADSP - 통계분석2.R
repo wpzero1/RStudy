@@ -190,3 +190,87 @@ plot(fit,type="lines") #스크리도표(Scree plot). 고유값이 1보다 크며
 
 biplot(fit)
  #제1주성분과 제2주성분만 구해 2차원의 점그래프로 표현함.
+
+# 04. 시계열 예측 : 관측치가 시간적 순서를 가진 것. 일정 시점에 조사된 데이터는 횡단 자료라고 한다.
+
+ # 1. 정상성 ** : 시계열 수준과 분산에 체계적인 변화가 없고, 주기적 변동이 없음.
+   # 조건들 3개.
+    # (1) 평균값은 시간 t에 관계없이 일정하다.
+    # (2) 분산값은 시간 t에 관계없이 일정하다.
+    # (3) 공분산은 시간 t에 의존하지 않고 오직 시차에만 의존한다.
+ # --> 하나라도 만족 못하는 경우는 비정상시계열 (대부분)
+
+# 2. 비정상시계열을 정상시계열로 전환하는 방법
+  # (1) 원시계열에 차분(현재 시점에서 바로 전 시점의 자료 값 빼는 것)
+  # (2) 계절성을 갖는 것은 계절차분 사용
+  # (3) 분산이 일정하지 않는 경우, 원계열에 자연로그 취하기
+
+# 3. 시계열 모형
+ # 1) 자기회귀모형 : 자신의 과거 값을 사용함. 현시점의 시계열 자료에 과거 1시점 이전의 자료만 영향을 준다면 1차 자기회귀모형, AR(1) 모형이라고 함.
+
+  # 백색잡음 과정 : 시계열 et의 평균이 0이고 분산이 일정한 값 2시그마, 자기공분산이 0인경우.
+
+ # 2) 이동평균모형 : 최근 데이터의 평균(혹은 중앙치)을 예측치로 사용. 각 과거치에는 동일한 가중치가 주어짐
+
+ # 3) 자기회귀누적이동 모형(ARIMA) : 대부분 많은 시계열 자료가 이것을 따름. 비정상시계열 모형임.
+
+# 4) 자기회귀모형평균 모형 식별
+
+# 5) 분해 시계열 **
+ # (1) 추세요인 : 자료가 어떤 특정한 형태를 취할 때.
+ # (2) 계절요인 : 계절에 따라 고정된 주기에 따라 자료 변화
+ # (3) 순환요인 : 알려지지 않은 주기를 따를 때
+ # (4) 불규칙 요인 : 회귀분석에서 오차에 해당함.
+
+ # 예제10 아스완댐에서 측정한 나일강의 연간 유입량 시계열 데이터
+Nile
+plot(Nile)
+ #비계절성 데이터. 그러나 평균이 변화하는 추세를 보여 정상성 만족 x
+
+#diff로 차분
+Nile.diff1<-diff(Nile,differences=1)
+plot(Nile.diff1)
+#1차 차분으로는 아직 평균 일정하지 않아 2차 차분함
+
+Nile.diff2<-diff(Nile,diffrences=2)
+plot(Nile.diff2)
+# 평균과 분산이 시간이 지남에 따라 어느정도 일정한 정상성을 만족함
+
+# 예제 11 영국 내 월별 폐질환 사망자 시계열 자료
+ldeaths
+plot(ldeaths)
+ # 연도별로 계절성을 띤다. 주기별로 사망자수 급감
+
+ # decompose() 함수로 시계열 자료를 4가지 요인으로 분해함
+ldeaths.decompose<-decompose(ldeaths)
+ldeaths.decompose$seasonal
+plot(ldeaths.decompose)
+
+# 계절요인을 추정해 그 값을 원시계열 자료에서 빼면 적절하게 조정할 수 있음
+ldeaths.decompose.adj<-ldeaths-ldeaths.decompose$seasonal
+plot(ldeaths.decompose.adj)
+
+# 4. ARIMA 모델 적합 및 결정 ** : 자기상관함수 알아보기위해 acf 함수 사용
+
+acf(Nile.diff2, lag.max = 20)
+acf(Nile.diff2, lag.max=20,plot=FALSE)
+ #래그 3에서 자기상관계수의 값은 0.027. 래그 0과 8을 제외하고 모두 신뢰구간에 있음
+
+pacf(Nile.diff2,lag.max=20)
+pacf(Nile.diff2,lag.max=20,plot=FALSE)
+#부분자기함수. lag1~7은 음수, lag8에서 절단된다.
+
+install.packages("forecast")
+library(forecast)
+auto.arima(Nile)
+ # 패키지 안에 있는 함수 이용해 적절한 ARIMA 모형 결정
+
+ #ARIMA 모형을 이용한 예측
+Nile.arima<-arima(Nile,order=c(1,1,1)) #데이터에 모형을 적합한 후 forecast함수 이용해 미래 수치값 예측
+Nile.arima
+
+#이를 통해 미래 50개연도 나일강 연간 유입량 예측
+Nile.forecast<-forecast(Nile.arima,h=50) #h=연도
+Nile.forecast
+plot(Nile.forecast)
+
