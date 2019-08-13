@@ -65,3 +65,56 @@ exp(-61.3183)*exp(2.211*28) #28도에서 오즈 예측값. 1.8
  #28도에서 오즈 예측값은 27도에서의 오즈 예측값보다 exp(2.211)차이.
  #28도에서 암컷에서 수컷으로 부화할 가능성은 0.2*9.125=1.825
 
+
+ # iris 데이터를 이용한 로지스틱 회귀
+iris
+colnames(iris)<-tolower(colnames(iris)) #컬럼명 소문자로 변환
+a<-subset(iris,species=="setosa"|species=="versicolor")
+#로지스틱 회귀를 하기 위해 범주가 2개인 setosa=1과 versicolor=2만 추출.
+a$species<-factor(a$species) #2개 레벨을 가진 새로운 factor(범주)형
+
+ #glm() : 선형회귀분석 lm과 유사. glm(모형,data,family="binomial")
+b<-glm(species~sepal.length,data=a,family = binomial)
+summary(b)
+
+ # sepal.length p-value 유의수준보다 낮아 매우 유의한 변수다.
+coef(b)
+ #sepal.length : 5.140336 (회귀계수)
+
+ #로지스틱 회귀계수 값은 exp(5.140336)의 값이므로 약 170배가 된다.
+exp(coef(b))["sepal.length"]
+ #sepal.length가 한 단위 증가함에 따라 Vericolor일 오즈가 10배 증가
+
+fitted(b)[c(1:3,98:100)]
+ #로지스틱 모델은 0 또는 1로 값을 예측하기에, 0.5이하면 setosa, 0.5이상이면 versicolor 예측값을 의미
+predict(b,newdata = a[c(1,50,51,100),],type = "response")
+ #type을 response로 지정하고 예측 수행하면, 0~1 사이 확률 구해줌
+cdplot(species~sepal.length,data=a)
+#연속형 변수의 변화에 따른 범주형 변수의 조건부 분포를 보여줌.
+ #즉 sepal.length가 증가함에 따라 veriscolor의 확률이 증가함을 보여준다.
+
+#다항 로지스틱 회귀분석 : 32종류의 자동차에 대한 11개 변수값 측정 자료
+attach(mtcars) #attach는 코드에서 필드이름만으로 데이터에 바로 접근 가능
+str(mtcars)
+
+ #이항변수 vs(0:flat engine, 1:straight engine)를 반응변수로,
+ #mpg와 am(Transmission: automatic=0, manual=1)을 예측변수로 하는 로지스틱 회귀모형 추정
+
+vs
+mpg
+am
+
+glm.vs<-glm(vs~mpg+am,data=mtcars,family = "binomial")
+summary(glm.vs)
+ # 해석
+ #am이 주어질 때, mpg값이 한 단위 증가할 때 vs=1 오즈가 exp(0.6809)=1.98(98%) 증가
+ #mpg가 주어질 때 오즈가 대한 am의 효과는 exp(-3.0073)=0.05배. 변속기가 수동인 경우 자동에 비해 vs=1의 오즈가 95% 감소
+
+anova(glm.vs,test="Chisq") #모형의 적합 단계별로 이탈로의 감소량과 유의성 검정 결과 제시
+
+#Mcfadden R square로 모델 fit 확인 가능
+install.packages("pscl")
+library(pscl)
+pR2(glm.vs)
+ #R square 값이 0.69로, 데이터셋의 분산의 약 69.1% 설명
+
